@@ -99,7 +99,7 @@ var GamePlay = {
     displayScore: function(ctx, state) {
         ctx.font = "30px Arial";
         ctx.fillStyle = "#366B76";
-        ctx.fillText("My Bot", 0, 50);
+        ctx.fillText("Harvester", 0, 50);
         ctx.font = "15px Arial";
         ctx.fillStyle = "#000";
         for (var i=0; i<GamePlay.itemTypeCount; i++) {
