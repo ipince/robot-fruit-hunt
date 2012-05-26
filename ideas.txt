@@ -1,0 +1,14 @@
+
+The game is decided on how many fruit types each bot wins.
+- It makes no sense to pick up any more bananas if we already have the majority of the bananas in the board.
+- It makes no sense to pick up any more bananas if our opponent already has the majority of the bananas in the board.
+=> At the beginning of each turn, we should look at the status of the "real" fruits left and based our strategy solely based on that.
+* OPTIMIZATION: instead of running the calculation every turn, run it once, and then update it based on what happened on the last turn.
+
+=> If we have no "real" fruit left to go after (i.e. the game's fate is decided already), then we should just eat the nearest fruit. This is so the game ends faster (it only ends after all fruit has been gathered).
+
+Global-based approach
+- Maintain a set of fruits that are "owned" by us, based on the fact that we are closer to them than our enemy is.
+- Come up with an board position evaluation metric that allows us to choose the next move by simply following an upward path (in the metric).
+- Such metric could include:
+-- Distance to pieces of fruit that we care about. In fact, if there are 5 bananas left and neither player has any, then we really only care about the closest 3 at this point in time.
