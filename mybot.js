@@ -7,6 +7,7 @@ function new_game() {
   init_fruit_locations();
 
   // Init opponents items
+  OPPONENTS_ITEMS = new Object();
   for (var t = 1; t <= get_number_of_item_types(); t++) {
     OPPONENTS_ITEMS[t] = 0;
   }
@@ -14,20 +15,18 @@ function new_game() {
 
 function make_move() {
 
-  // Update opponenet's items
+  // Update opponent's items
   for (var t = 1; t <= get_number_of_item_types(); t++) {
-    trace("api count for item " + t + ": " + get_opponent_item_count(t));
+    update_fruit_locations(t);
     if (get_opponent_item_count(t) > OPPONENTS_ITEMS[t]) {
-      trace("opponent picked up fruit! which one?");
-      // Opponent just picked up a fruit!
+      // Opponent just picked up a fruit! Update counts and locations.
       OPPONENTS_ITEMS[t] = get_opponent_item_count(t);
-      update_fruit_locations(t);
       // Only one fruit per cell, so we can break here.
-      break;
     }
   }
 
-  var board = get_board();
+  // Go to nearest fruit
+  return get_move_nearest_fruit();
 
   var total_types = get_number_of_item_types();
   for (var i = 1; i <= total_types; i++) {
@@ -46,7 +45,6 @@ function make_move() {
 //      trace("There is no winner for this category... yet!");
     }
   }
-  return PASS;
 
   // we found an item! take it!
   if (board[get_my_x()][get_my_y()] > 0) {
@@ -65,10 +63,66 @@ function make_move() {
 }
 
 function get_move_nearest_fruit() {
-  return EAST;
+  var bot_position = {'x': get_my_x(), 'y': get_my_y()};
+  var min_dist = Number.MAX_VALUE;
+  var nearest_fruit_pos;
+  for (var type in FRUIT_LOCATIONS) {
+    var fruits = FRUIT_LOCATIONS[type];
+    for (var i = 0; i < fruits.length; i++) {
+      if (dist(bot_position, fruits[i]) < min_dist) {
+        min_dist = dist(bot_position, fruits[i]);
+        nearest_fruit_pos = fruits[i];
+      }
+    }
+  }
+  if (nearest_fruit_pos == undefined) {
+    // No fruit left?
+    trace("Did not find nearest fruit!");
+    return PASS;
+  }
+  return get_move(bot_position, nearest_fruit_pos);
+}
+
+function get_move(position, target) {
+  // TODO(ipince): decide between PASS or TAKE.
+  if (position.x == target.x) {
+    if (position.y == target.y) {
+      return TAKE;
+    } else if (position.y > target.y) {
+      return NORTH;
+    } else {
+      return SOUTH;
+    }
+  } else if (position.x > target.x) {
+    if (position.y == target.y) {
+      return WEST;
+    } else if (position.y > target.y) {
+      // We can go west or north here; choose one based on other metrics?
+      return NORTH;
+    } else {
+      // We can go west or south here; choose one based on other metrics?
+      return SOUTH;
+    }
+  } else { // position.x < target.x
+    if (position.y == target.y) {
+      return EAST;
+    } else if (position.y > target.y) {
+      // We can go east or north here; choose one based on other metrics?
+      return NORTH;
+    } else {
+      // We can go east or south here; choose one based on other metrics?
+      return SOUTH;
+    }
+  }
+}
+
+// Manhattan distance.
+function dist(here, there) {
+  return Math.abs(here.x - there.x) + Math.abs(here.y - there.y);
 }
 
 function init_fruit_locations() {
+  FRUIT_LOCATIONS = new Object();
   var board = get_board();
   for (var x = 0; x < WIDTH; x++) {
     for (var y = 0; y < HEIGHT; y++) {
@@ -88,6 +142,7 @@ function update_fruit_locations(type) {
   for (var i = 0; i < fruits.length; i++) {
     if (!has_item(get_board()[fruits[i].x][fruits[i].y])) {
       trace("Found fruit at " + fruits[i].x + ", " + fruits[i].y + "! We want to remove it now");
+      fruits.splice(i, 1);
       break;
     }
   }
