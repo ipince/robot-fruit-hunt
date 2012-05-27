@@ -1,6 +1,7 @@
 var BOT_NAME = "Harvestor";
 
 var FRUIT_LOCATIONS = new Object();
+var VALUABLE_FRUIT_LOCATIONS = new Object();
 var OPPONENTS_ITEMS = new Object();
 
 function new_game() {
@@ -24,52 +25,46 @@ function make_move() {
       // Only one fruit per cell, so we can break here.
     }
   }
+  update_valuable_fruits();
 
   // Go to nearest fruit
-  return get_move_nearest_fruit();
+  return get_move_nearest_valuable_fruit();
+}
 
-  var total_types = get_number_of_item_types();
-  for (var i = 1; i <= total_types; i++) {
+function update_valuable_fruits() {
+  for (var type in FRUIT_LOCATIONS) {
 //    trace("There are a total of " + get_total_item_count(i) +
 //          " fruits of type " + i + ", " + get_my_item_count(i) +
 //          " of them owned by " + BOT_NAME + ", " + get_opponent_item_count(i) +
 //          " owned by opponent");
-    var remaining_items = get_total_item_count(i) - get_my_item_count(i) - get_opponent_item_count(i);
-    var worst_case_opponents_items = get_opponent_item_count(i) + remaining_items;
-    var best_case_our_items = get_my_item_count(i) + remaining_items;
-    if (get_my_item_count(i) > worst_case_opponents_items) {
-//      trace("We have won this category!!");
-    } else if (get_opponent_item_count(i) > best_case_our_items) {
-//      trace("We have lost this category :(");
+    var remaining_items = get_total_item_count(type) - get_my_item_count(type) - get_opponent_item_count(type);
+    var valuable = true;
+    if (get_my_item_count(type) > get_opponent_item_count(type) + remaining_items) {
+      // We have won this category, so any other remaining fruits are worthless
+      valuable = false;
+    } else if (get_opponent_item_count(type) > get_my_item_count(type) + remaining_items) {
+      // We have lost this category, so any other remaining fruits are worthless
+      valuable = false;
     } else {
-//      trace("There is no winner for this category... yet!");
+      // The category is still up for grabs. Only consider the first n fruits needed to actually
+      // win this category.
+      // TODO(ipince): implement.
+    }
+    var fruits = FRUIT_LOCATIONS[type];
+    for (var i = 0; i < fruits.length; i++) {
+      fruits[i].valuable = valuable;
     }
   }
-
-  // we found an item! take it!
-  if (board[get_my_x()][get_my_y()] > 0) {
-    return TAKE;
-  }
-
-  var rand = Math.random() * 4;
-
-  if (rand < 1) return NORTH;
-  if (rand < 2) return SOUTH;
-  if (rand < 3) return EAST;
-  if (rand < 4) return WEST;
-
-  trace("we are returning pass!");
-  return PASS;
 }
 
-function get_move_nearest_fruit() {
+function get_move_nearest_valuable_fruit() {
   var bot_position = {'x': get_my_x(), 'y': get_my_y()};
   var min_dist = Number.MAX_VALUE;
   var nearest_fruit_pos;
   for (var type in FRUIT_LOCATIONS) {
     var fruits = FRUIT_LOCATIONS[type];
     for (var i = 0; i < fruits.length; i++) {
-      if (dist(bot_position, fruits[i]) < min_dist) {
+      if (fruits[i].valuable && dist(bot_position, fruits[i]) < min_dist) {
         min_dist = dist(bot_position, fruits[i]);
         nearest_fruit_pos = fruits[i];
       }
@@ -131,7 +126,7 @@ function init_fruit_locations() {
         if (FRUIT_LOCATIONS[item_in_cell] === undefined) {
           FRUIT_LOCATIONS[item_in_cell] = new Array();
         }
-        FRUIT_LOCATIONS[item_in_cell].push({'x': x, 'y': y});
+        FRUIT_LOCATIONS[item_in_cell].push({'x': x, 'y': y, 'valuable': true});
       }
     }
   }
@@ -141,7 +136,6 @@ function update_fruit_locations(type) {
   var fruits = FRUIT_LOCATIONS[type];
   for (var i = 0; i < fruits.length; i++) {
     if (!has_item(get_board()[fruits[i].x][fruits[i].y])) {
-      trace("Found fruit at " + fruits[i].x + ", " + fruits[i].y + "! We want to remove it now");
       fruits.splice(i, 1);
       break;
     }
